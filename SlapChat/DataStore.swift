@@ -11,9 +11,11 @@ import CoreData
 
 class DataStore {
     
-    var messages:[Message] = []
-    
     static let sharedInstance = DataStore()
+    /*fileprivate*/ var messages: [Message] = []
+    var users: [User] = []
+    static var dateFormatter = DateFormatter()
+    
     
     private init() {}
     
@@ -62,51 +64,90 @@ class DataStore {
         }
     }
     
-    // MARK: - Core Data Fetching support
-    
-    func fetchData() {
+    func fetchData () {
         let context = persistentContainer.viewContext
-        let messagesRequest: NSFetchRequest<Message> = Message.fetchRequest()
+        let fetchRequest: NSFetchRequest<Message> = Message.fetchRequest()
+        do{
+            messages = try context.fetch(fetchRequest)
+            sortMessages()
+        }catch{}
         
-        do {
-            messages = try context.fetch(messagesRequest)
-            messages.sort(by: { (message1, message2) -> Bool in
-                let date1 = message1.createdAt! as Date
-                let date2 = message2.createdAt! as Date
-                return date1 < date2
-            })
-        } catch let error {
-            print("Error fetching data: \(error)")
-            messages = []
-        }
-        
-        if messages.count == 0 {
-            generateTestData()
-        }
     }
     
-    // MARK: - Core Data generation of test data
-    
-    func generateTestData() {
-        let context = persistentContainer.viewContext
-        
-        let messageOne: Message = NSEntityDescription.insertNewObject(forEntityName: "Message", into: context) as! Message
-        
-        messageOne.content = "Message 1"
-        messageOne.createdAt = NSDate()
-        
-        let messageTwo: Message = NSEntityDescription.insertNewObject(forEntityName: "Message", into: context) as! Message
-        
-        messageTwo.content = "Message 2"
-        messageTwo.createdAt = NSDate()
-        
-        let messageThree: Message = NSEntityDescription.insertNewObject(forEntityName: "Message", into: context) as! Message
-        
-        messageThree.content = "Message 3"
-        messageThree.createdAt = NSDate()
-        
-        saveContext()
-        fetchData()
+    func addMessage(content: String, date: Date){
+        let message = Message(context: self.persistentContainer.viewContext)
+        message.content = content
+        let messageDate = date as NSDate
+        message.createdAt = messageDate
+        messages.append(message)
+        sortMessages()
     }
     
+    func getMessage(at index: Int)-> Message{
+        return messages[index]
+    }
+    
+    func getMessageCount()-> Int{
+        return messages.count
+    }
+    
+    func sortMessages(){
+        
+        messages.sort(by: {
+            guard let date1 = $0.createdAt else {return false}
+            guard let date2 = $1.createdAt else {return true}
+            return date1.timeIntervalSinceNow < date2.timeIntervalSinceNow
+        })
+    }
+    
+    func generateRandomDate(daysBack: Int)-> Date?{
+        let day = arc4random_uniform(UInt32(daysBack))+1
+        let hour = arc4random_uniform(23)
+        let minute = arc4random_uniform(59)
+        
+        let today = Date(timeIntervalSinceNow: 0)
+        let gregorian  = NSCalendar(calendarIdentifier: NSCalendar.Identifier.gregorian)
+        var offsetComponents = DateComponents()
+        offsetComponents.day = Int(day - 1)
+        offsetComponents.hour = Int(hour)
+        offsetComponents.minute = Int(minute)
+        
+        let randomDate = gregorian?.date(byAdding: offsetComponents, to: today, options: .init(rawValue: 0) )
+        return randomDate
+    }
+    
+    func generateTestData(){
+        let verbs = ["lost", "bought", "tested", "tasted", "washed", "carried", "tried out", "burned", "insulted", "trashed", "smashed", "dropped", "side-eyed", "kissed"]
+        let pronouns = [("I ", "your"), ("You", "my")]
+        let nouns = ["pants", "money", "DS", "favorite mug", "best friend", "grandma's priceless spoon collection", "lucky boxers", "sketchbook", "laptop", "textbook", "student film", "app project", "term paper", "girlfriend", "condoms", "championship ring","iPhone"]
+        let finish = ["last thursday.", "two weeks ago.", "on monday.", "over spring break.", "while I was in Chem Lab.", "when we were in High School", "while my buddy Clyde was watching.", "at the Kappa Psi party.", "in your wildest dreams.", "while everyone else was at the homecoming game."]
+        
+        let num = Int(arc4random_uniform(1300))+200
+        for _ in 0...num{
+            let rand = Int(arc4random())
+            print("hi")
+            let msgStr = pronouns[rand % pronouns.count].0 + " " + verbs[rand % verbs.count] +  " " + pronouns[rand % pronouns.count].1 + " " + nouns[rand % nouns.count] + " " + finish[rand % finish.count]
+            if let date = generateRandomDate(daysBack: 100){
+                addMessage(content: msgStr, date: date)
+                print ("did a thing")
+            }else {print("could not generate date")}
+        }
+        
+        for index in 0..<getMessageCount(){
+            let messageToPrint = getMessage(at: index)
+            print("\(messageToPrint.createdAt): \(messageToPrint.content)")
+        }
+        
+        let adjectives = ["sweet","bro","hella","rad","awesome","legit", "sick", "elite", "patrician"]
+        let nameNouns = ["Guy","Bro","Jeff","Dude","Playa","Baller","Lifter","Gangster","Man"]
+        let numbers = ["69","1989","6969","00","","xXx","80085",""]
+        
+        let names = ["Jim","Jordan","Jeff","Drew","Ryan","Justin","Greg","Chris","Mike"]
+        
+        let adjNum = arc4random_uniform(UInt32(adjectives.count))
+        let nameNum = arc4random_uniform(UInt32(names.count))
+        let numNum = arc4random_uniform(UInt32(numbers.count))
+        
+        if
+    }
 }

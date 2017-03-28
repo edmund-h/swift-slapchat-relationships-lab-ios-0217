@@ -6,45 +6,39 @@
 //  Copyright © 2016 Flatiron School. All rights reserved.
 //
 
+// credit to eirnym, adapted this from their OBJC code
+
+// generates a random date and time
+
 import UIKit
 
-class TableViewController: UITableViewController {
-    
-    var store = DataStore.sharedInstance
+class TableViewController: UITableViewController{
 
+    let store = DataStore.sharedInstance
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        store.fetchData()
+        
+        if store.getMessageCount() < 1000 {
+            store.generateTestData()
+        }
+        
+        DataStore.dateFormatter.dateFormat = "MMMM d, yyyy (hh:mm)"
     }
     
-    override func viewWillAppear(_ animated: Bool) {
-        
-        super.viewWillAppear(true)
-        
-        store.fetchData()
-        tableView.reloadData()
-    }
-
-    // MARK: - Table view data source
-    
-    override func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
-    }
-
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        // #warning Incomplete implementation, return the number of rows
-        return store.messages.count
+        return store.getMessageCount()
     }
-
+    
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
-        let cell = tableView.dequeueReusableCell(withIdentifier: "basicCell", for: indexPath)
-
-        let eachMessage = store.messages[indexPath.row]
-        
-        cell.textLabel?.text = eachMessage.content
-
+        let cell = tableView.dequeueReusableCell(withIdentifier: "messageCell", for: indexPath)
+        let messageForCell = store.getMessage(at: indexPath.row)
+        cell.tag = indexPath.row
+        let date = DataStore.dateFormatter.string(from: messageForCell.createdAt as! Date)
+        cell.textLabel?.text = "\(date )"
+        cell.detailTextLabel?.text = messageForCell.content
         return cell
     }
+    
     
 }
